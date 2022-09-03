@@ -34,6 +34,14 @@ var (
 //домашняя страница
 func (app *application) home(w http.ResponseWriter, r *http.Request) {
 	session, _ := store.Get(r, "cookie-name")
+  switch session.Values["authenticated"].(type) {
+    case nil:
+      session.Values["authenticated"] = false
+  }
+  switch session.Values["name"].(type) {
+    case nil:
+      session.Values["name"] = ""
+  }
 	if r.URL.Path != "/" {
 		app.notFound(w) // Использование помощника notFound()
 		return
@@ -46,7 +54,7 @@ func (app *application) home(w http.ResponseWriter, r *http.Request) {
 	}
 
 	//cockie_data := &CockieData{isAuth: session.Values["authenticated"].(bool), Username: session.Values["name"].(string)}.
-data := &templateData{Notes: n, IsAuth: session.Values["authenticated"].(bool), Username: session.Values["name"].(string)}
+  data := &templateData{Notes: n, IsAuth: session.Values["authenticated"].(bool), Username: session.Values["name"].(string)}
 
 	files := []string{
 		"./ui/html/main_page.html",
@@ -144,16 +152,6 @@ func (app *application) singing(w http.ResponseWriter, r *http.Request) {
 		default:
 			app.users.Singin(*users, checkUser)
 			http.Redirect(w, r, "/", http.StatusSeeOther)
-			//data := ViewData{Check: true}
-			//tmpl, _ := template.ParseFiles("./ui/html/email_check.html")
-			//tmpl.Execute(w, data)
-			//auth := smtp.PlainAuth("", "gladiatormahotina@yandex.ru", "Ihateyadi123!", "smtp.yandex.ru")
-			//err = smtp.SendMail("smtp.yandex.ru:25", auth, "gladiatormahotina@yandex.ru", []string{users.Email}, []byte(string(letter)))
-			//	if err != nil {
-			//		log.Fatal(err)
-			//	}
-
-			//r.ParseForm()
 		}
 	}
 }
