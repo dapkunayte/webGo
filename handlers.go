@@ -154,8 +154,6 @@ func (app *application) singing(w http.ResponseWriter, r *http.Request) {
 			//	}
 
 			//r.ParseForm()
-
-			//447595loH!
 		}
 	}
 }
