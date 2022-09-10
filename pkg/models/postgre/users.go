@@ -18,7 +18,8 @@ func (m *UserModel) Get(username string) (*models.User, error) {
 	// Используем метод QueryRow() для выполнения SQL запроса,
 	// передавая ненадежную переменную id в качестве значения для плейсхолдера
 	// Возвращается указатель на объект sql.Row, который содержит данные записи.
-	row := m.DB.QueryRow(stmt, username)
+	row, _ := m.DB.Query(stmt, username)
+	defer row.Close()
 
 	// Инициализируем указатель на новую структуру Snippet.
 	s := &models.User{}
@@ -116,7 +117,8 @@ func (m *UserModel) Singin(users models.User, checkBool bool) {
 		hashedPassword, err := bcrypt.GenerateFromPassword([]byte(users.Password), 8)
 		stmt := "INSERT INTO users VALUES ($1, $2, $3)"
 
-		_, err = m.DB.Query(stmt, users.Username, string(hashedPassword), users.Email)
+		row, err := m.DB.Query(stmt, users.Username, string(hashedPassword), users.Email)
+		defer row.Close()
 		if err != nil {
 			panic(err)
 		} else {

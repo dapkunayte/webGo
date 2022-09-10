@@ -11,7 +11,6 @@ type NoteModel struct {
 	DB *sql.DB
 }
 
-// Insert - Метод для создания новой заметки в базе дынных.
 func (m *NoteModel) Insert(title, content, username string) (int, error) {
 	// Ниже будет SQL запрос, который мы хотим выполнить. Мы разделили его на две строки
 	// для удобства чтения (поэтому он окружен обратными кавычками
@@ -42,6 +41,7 @@ func (m *NoteModel) Get(id int) (*models.Note, error) {
 	// передавая ненадежную переменную id в качестве значения для плейсхолдера
 	// Возвращается указатель на объект sql.Row, который содержит данные записи.
 	row := m.DB.QueryRow(stmt, id)
+	//defer row.Close()
 
 	// Инициализируем указатель на новую структуру Snippet.
 	s := &models.Note{}
@@ -62,7 +62,6 @@ func (m *NoteModel) Get(id int) (*models.Note, error) {
 			return nil, err
 		}
 	}
-
 	// Если все хорошо, возвращается объект Snippet.
 	return s, nil
 }

@@ -6,10 +6,10 @@ import (
 	"fmt"
 	"github.com/gorilla/sessions"
 	"html/template"
-	"math/rand"
+	//"math/rand"
 	"net/http"
 	"strconv"
-	"time"
+	//"time"
 )
 
 type ViewData struct {
@@ -18,13 +18,16 @@ type ViewData struct {
 }
 
 type templateData struct {
-  Note          *models.Note
-  Notes         []*models.Note
-	IsAuth        bool
-	Username      string
-	OtherUsername string
+	Note             *models.Note
+	Notes            []*models.Note
+	IsAuth           bool
+	Username         string
+	OtherUsername    string
+	Subscribes_count int
+	Follows_count    int
+	Subscribes       []*models.Subscribe
+	Sub_fact         bool
 }
-
 var (
 	// key must be 16, 24 or 32 bytes long (AES-128, AES-192 or AES-256)
 	key   = []byte("super-secret-key")
@@ -78,12 +81,12 @@ func (app *application) home(w http.ResponseWriter, r *http.Request) {
 
 //регистрация
 func (app *application) singing(w http.ResponseWriter, r *http.Request) {
+	files := []string{
+		"./ui/html/base.html",
+		"./ui/html/footer.partial.html",
+	}
 	users := &models.User{}
 	if r.Method == http.MethodGet {
-		files := []string{
-			"./ui/html/base.html",
-			"./ui/html/footer.partial.html",
-		}
 		data := ViewData{
 			Text: "",
 		}
@@ -115,43 +118,55 @@ func (app *application) singing(w http.ResponseWriter, r *http.Request) {
 			data := ViewData{
 				Text: strLog,
 			}
-			tmpl, _ := template.ParseFiles("./ui/html/base.html")
+			tmpl, _ := template.ParseFiles(files...)
 			tmpl.Execute(w, data)
 		case checkPassword == false:
 			data := ViewData{
 				Text: strPass,
 			}
-			tmpl, _ := template.ParseFiles("./ui/html/base.html")
+			tmpl, _ := template.ParseFiles(files...)
 			tmpl.Execute(w, data)
 		case checkMail == false:
 			data := ViewData{
 				Text: "Некорректная почта",
 			}
-			tmpl, _ := template.ParseFiles("./ui/html/base.html")
+			tmpl, _ := template.ParseFiles(files...)
 			tmpl.Execute(w, data)
 		case users.Password != checkPass:
 			data := ViewData{
 				Text: "Пароли не совпадают",
 			}
-			tmpl, _ := template.ParseFiles("./ui/html/base.html")
+			tmpl, _ := template.ParseFiles(files...)
 			tmpl.Execute(w, data)
 		case users.Password == "" || users.Username == "" || users.Email == "":
 			data := ViewData{
 				Text: "Поля не могут быть пустыми",
 			}
-			tmpl, _ := template.ParseFiles("./ui/html/base.html")
+			tmpl, _ := template.ParseFiles(files...)
 			tmpl.Execute(w, data)
 		case checkUser == true:
 			{
 				data := ViewData{
 					Text: strUser,
 				}
-				tmpl, _ := template.ParseFiles("./ui/html/base.html")
+				tmpl, _ := template.ParseFiles(files...)
 				tmpl.Execute(w, data)
 			}
 		default:
 			app.users.Singin(*users, checkUser)
 			http.Redirect(w, r, "/", http.StatusSeeOther)
+			//data := ViewData{Check: true}
+			//tmpl, _ := template.ParseFiles("./ui/html/email_check.html")
+			//tmpl.Execute(w, data)
+			//auth := smtp.PlainAuth("", "gladiatormahotina@yandex.ru", "Ihateyadi123!", "smtp.yandex.ru")
+			//err = smtp.SendMail("smtp.yandex.ru:25", auth, "gladiatormahotina@yandex.ru", []string{users.Email}, []byte(string(letter)))
+			//	if err != nil {
+			//		log.Fatal(err)
+			//	}
+
+			//r.ParseForm()
+
+			//447595loH!
 		}
 	}
 }
@@ -287,6 +302,7 @@ func (app *application) logout(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, "/", http.StatusSeeOther)
 }
 
+/*
 //не реализована логика (шаблон +- есть)
 func (app *application) checkEmail(w http.ResponseWriter, r *http.Request) {
 
@@ -331,7 +347,7 @@ func (app *application) checkEmail(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 }
-
+*/
 //возможность пользователя просматрирвать информацию о своем аккаунте
 func (app *application) userInfo(w http.ResponseWriter, r *http.Request) {
 	if r.Method == http.MethodGet {
@@ -340,8 +356,37 @@ func (app *application) userInfo(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, "Forbidden", http.StatusForbidden)
 			return
 		}
-		
+		/*u, err := app.users.Get(session.Values["name"].(string))
+		if err != nil {
+			if errors.Is(err, models.ErrNoRecord) {
+				app.notFound(w)
+			} else {
+				app.serverError(w, err)
+			}
+			return
+		}
+
+		*/
+
 		s, err := app.notes.GetUsersNotes(session.Values["name"].(string))
+		if err != nil {
+			if errors.Is(err, models.ErrNoRecord) {
+				app.notFound(w)
+			} else {
+				app.serverError(w, err)
+			}
+			return
+		}
+		subs, err := app.subscribes.GetUsersSub(session.Values["name"].(string))
+		if err != nil {
+			if errors.Is(err, models.ErrNoRecord) {
+				app.notFound(w)
+			} else {
+				app.serverError(w, err)
+			}
+			return
+		}
+		folls, err := app.subscribes.GetUsersFolls(session.Values["name"].(string))
 		if err != nil {
 			if errors.Is(err, models.ErrNoRecord) {
 				app.notFound(w)
@@ -363,7 +408,7 @@ func (app *application) userInfo(w http.ResponseWriter, r *http.Request) {
 		if err != nil {
 			app.serverError(w, err) // Использование помощника serverError()
 		}
-		data := &templateData{Notes: s, IsAuth: session.Values["authenticated"].(bool), Username: session.Values["name"].(string)}
+		data := &templateData{Notes: s, IsAuth: session.Values["authenticated"].(bool), Username: session.Values["name"].(string), Subscribes_count: len(subs), Follows_count: len(folls)}
 
 		err = ts.Execute(w, data)
 		if err != nil {
@@ -376,10 +421,21 @@ func (app *application) userInfo(w http.ResponseWriter, r *http.Request) {
 
 //просмотр информации о другом пользователе
 func (app *application) userPage(w http.ResponseWriter, r *http.Request) {
+	username := string(r.URL.Query().Get("id"))
+	//url := r.URL.Path
+	session, _ := store.Get(r, "cookie-name")
+	switch session.Values["sub_fact"].(type) {
+	case nil:
+		session.Values["sub_fact"] = false
+	}
 	if r.Method == http.MethodGet {
-		username := string(r.URL.Query().Get("id"))
-		session, _ := store.Get(r, "cookie-name")
-		
+		/*
+			if auth, ok := session.Values["authenticated"].(bool); !ok || !auth {
+				http.Error(w, "Forbidden", http.StatusForbidden)
+				return
+			}
+
+		*/
 		s, err := app.notes.GetUsersNotes(username)
 		if err != nil {
 			if errors.Is(err, models.ErrNoRecord) {
@@ -389,7 +445,33 @@ func (app *application) userPage(w http.ResponseWriter, r *http.Request) {
 			}
 			return
 		}
-
+		subs, err := app.subscribes.GetUsersSub(username)
+		if err != nil {
+			if errors.Is(err, models.ErrNoRecord) {
+				app.notFound(w)
+			} else {
+				app.serverError(w, err)
+			}
+			return
+		}
+		folls, err := app.subscribes.GetUsersFolls(username)
+		if err != nil {
+			if errors.Is(err, models.ErrNoRecord) {
+				app.notFound(w)
+			} else {
+				app.serverError(w, err)
+			}
+			return
+		}
+		if len(folls) != 0 {
+			for i := range folls {
+				if string(folls[i].SubId) == session.Values["name"].(string) {
+					session.Values["sub_fact"] = true
+					session.Save(r, w)
+					break
+				}
+			}
+		}
 		// Отображаем весь вывод на странице.
 		//fmt.Fprintf(w, "%v", u, s, len(s))
 		files := []string{
@@ -403,25 +485,23 @@ func (app *application) userPage(w http.ResponseWriter, r *http.Request) {
 		if err != nil {
 			app.serverError(w, err) // Использование помощника serverError()
 		}
-		data := &templateData{Notes: s, IsAuth: session.Values["authenticated"].(bool), OtherUsername: username, Username: session.Values["name"].(string)}
+		data := &templateData{Notes: s, IsAuth: session.Values["authenticated"].(bool), OtherUsername: username, Username: session.Values["name"].(string), Subscribes_count: len(subs), Follows_count: len(folls), Sub_fact: session.Values["sub_fact"].(bool)}
 
 		err = ts.Execute(w, data)
 		if err != nil {
 			app.serverError(w, err) // Использование помощника serverError()
 		}
+	} else {
+		fmt.Println(session.Values["name"].(string), username)
+		fmt.Println(session.Values["sub_fact"])
+		if session.Values["sub_fact"] == true {
+			app.subscribes.Delete(session.Values["name"].(string), username)
+			session.Values["sub_fact"] = false
+		} else {
+			app.subscribes.Insert(session.Values["name"].(string), username)
+			session.Values["sub_fact"] = true
+		}
+		session.Save(r, w)
+		http.Redirect(w, r, "/", http.StatusSeeOther)
 	}
 }
-
-/*
-//обработка подписки
-func (app *application) follow(w http.ResponseWriter, r *http.Request){
- if r.Method != http.MethodPost{
-
- }
-}
-
-//обработка отписки
-func (app *application) unfollow(w http.ResponseWriter, r *http.Request){
-
-}
-*/

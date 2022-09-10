@@ -9,7 +9,7 @@ func (app *application) routes() *http.ServeMux {
 	mux.HandleFunc("/", app.home)
   mux.HandleFunc("/singup", app.singing)
 	//mux.HandleFunc("email", app.singing)
-	mux.HandleFunc("/email", app.checkEmail)
+	//mux.HandleFunc("/email", app.checkEmail)
 	mux.HandleFunc("/auth", app.login)
 	mux.HandleFunc("/notes", app.showSnippet)
 	mux.HandleFunc("/notes/create", app.createSnippet)

@@ -22,8 +22,23 @@
                                      style="background-color: #efefef;">
                                     <div>
                                         <p class="mb-0">Количество записей: {{len .Notes}}</p>
+                                        <p class="mb-0">Подписчики: {{.Subscribes_count}}</p>
+                                        <p class="mb-0">Подписки: {{.Follows_count}}</p>
                                     </div>
                                 </div>
+                                {{if .OtherUsername}}
+                                <div class="d-flex justify-content-start rounded-3 p-2 mb-2">
+                                    <div>
+                                        <form method="post">
+                                            {{if .Sub_fact}}
+                                                <input type="submit" class="btn btn-primary btn-lg" value="Unfollow"/>
+                                            {{else}}
+                                                 <input type="submit" class="btn btn-primary btn-lg" value="Follow"/>
+                                            {{end}}
+                                        </form>
+                                    </div>
+                                </div>
+                                {{end}}
                             </div>
                         </div>
                     </div>

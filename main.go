@@ -16,10 +16,11 @@ import (
 // Добавляем поле snippets в структуру application. Это позволит
 // сделать объект SnippetModel доступным для наших обработчиков.
 type application struct {
-	errorLog *log.Logger
-	infoLog  *log.Logger
-	users    *postgre.UserModel
-  notes    *postgre.NoteModel
+	errorLog   *log.Logger
+	infoLog    *log.Logger
+	users      *postgre.UserModel
+	notes      *postgre.NoteModel
+	subscribes *postgre.SubModel
 }
 
 func main() {
@@ -44,11 +45,13 @@ func main() {
 	defer db.Close()
 
 	app := &application{
-		errorLog: errorLog,
-		infoLog:  infoLog,
-		users:    &postgre.UserModel{DB: db},
-		notes:    &postgre.NoteModel{DB: db},
+		errorLog:   errorLog,
+		infoLog:    infoLog,
+		users:      &postgre.UserModel{DB: db},
+		notes:      &postgre.NoteModel{DB: db},
+		subscribes: &postgre.SubModel{DB: db},
 	}
+
 
 	srv := &http.Server{
 		Addr:     *addr,
