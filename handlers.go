@@ -9,7 +9,8 @@ import (
 	//"math/rand"
 	"net/http"
 	"strconv"
-	//"time"
+	"time"
+  "strings"
 )
 
 type ViewData struct {
@@ -37,28 +38,33 @@ var (
 //домашняя страница
 func (app *application) home(w http.ResponseWriter, r *http.Request) {
 	session, _ := store.Get(r, "cookie-name")
-  switch session.Values["authenticated"].(type) {
-    case nil:
-      session.Values["authenticated"] = false
-  }
-  switch session.Values["name"].(type) {
-    case nil:
-      session.Values["name"] = ""
-  }
+	switch session.Values["authenticated"].(type) {
+	case nil:
+		session.Values["authenticated"] = false
+	}
+	switch session.Values["name"].(type) {
+	case nil:
+		session.Values["name"] = ""
+	}
+
 	if r.URL.Path != "/" {
 		app.notFound(w) // Использование помощника notFound()
 		return
 	}
-	
- n, err := app.notes.Latest()
+	n, err := app.notes.Latest()
 	if err != nil {
 		app.serverError(w, err)
 		return
 	}
 
-	//cockie_data := &CockieData{isAuth: session.Values["authenticated"].(bool), Username: session.Values["name"].(string)}.
-  data := &templateData{Notes: n, IsAuth: session.Values["authenticated"].(bool), Username: session.Values["name"].(string)}
+	for i := range n {
+		n[i].Created = strings.Replace(n[i].Created, "T", " ", -1)[0:19]
+		t, _ := time.Parse("2006-01-02 15:04:05", n[i].Created)
+		n[i].Created = t.Format("02.01.2006, 15:04")
+	}
 
+	//cockie_data := &CockieData{isAuth: session.Values["authenticated"].(bool), Username: session.Values["name"].(string)}
+	data := &templateData{Notes: n, IsAuth: session.Values["authenticated"].(bool), Username: session.Values["name"].(string)}
 	files := []string{
 		"./ui/html/main_page.html",
 		"./ui/html/base.layout.html",
@@ -72,7 +78,7 @@ func (app *application) home(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = ts.Execute(w,data)
+	err = ts.Execute(w, data)
 	if err != nil {
 		app.serverError(w, err) // Использование помощника serverError()
 	}
@@ -154,18 +160,12 @@ func (app *application) singing(w http.ResponseWriter, r *http.Request) {
 			}
 		default:
 			app.users.Singin(*users, checkUser)
+			session, _ := store.Get(r, "cookie-name")
+			session.Values["authenticated"] = true
+			session.Values["name"] = users.Username
+			session.Save(r, w)
 			http.Redirect(w, r, "/", http.StatusSeeOther)
-			//data := ViewData{Check: true}
-			//tmpl, _ := template.ParseFiles("./ui/html/email_check.html")
-			//tmpl.Execute(w, data)
-			//auth := smtp.PlainAuth("", "gladiatormahotina@yandex.ru", "Ihateyadi123!", "smtp.yandex.ru")
-			//err = smtp.SendMail("smtp.yandex.ru:25", auth, "gladiatormahotina@yandex.ru", []string{users.Email}, []byte(string(letter)))
-			//	if err != nil {
-			//		log.Fatal(err)
-			//	}
-
-			//r.ParseForm()
-
+	
 			//447595loH!
 		}
 	}
@@ -216,6 +216,18 @@ func (app *application) login(w http.ResponseWriter, r *http.Request) {
 
 //отображение заметки - не реализован шаблон
 func (app *application) showSnippet(w http.ResponseWriter, r *http.Request) {
+	session, _ := store.Get(r, "cookie-name")
+
+	switch session.Values["authenticated"].(type) {
+	case nil:
+		session.Values["authenticated"] = false
+	}
+
+	switch session.Values["name"].(type) {
+	case nil:
+		session.Values["name"] = ""
+	}
+
 	// Извлекаем значение параметра id из URL и попытаемся
 	// конвертировать строку в integer используя функцию strconv.Atoi(). Если его нельзя
 	// конвертировать в integer, или значение меньше 1, возвращаем ответ
@@ -237,12 +249,33 @@ func (app *application) showSnippet(w http.ResponseWriter, r *http.Request) {
 		}
 		return
 	}
+	s.Created = strings.Replace(s.Created, "T", " ", -1)[0:19]
+	t, _ := time.Parse("2006-01-02 15:04:05", s.Created)
+	s.Created = t.Format("02.01.2006, 15:04")
+
+	data := &templateData{Note: s, IsAuth: session.Values["authenticated"].(bool), Username: session.Values["name"].(string)}
+	files := []string{
+		"./ui/html/note.html",
+		"./ui/html/base.layout.html",
+		"./ui/html/footer.partial.html",
+		"./ui/html/header.partial.html",
+	}
+
+	ts, err := template.ParseFiles(files...)
+	if err != nil {
+		app.serverError(w, err) // Использование помощника serverError()
+		return
+	}
+
+	err = ts.Execute(w, data)
+	if err != nil {
+		app.serverError(w, err) // Использование помощника serverError()
+	}
 
 	// Отображаем весь вывод на странице.
-	fmt.Fprintf(w, "%v", s)
 }
 
-// Обработчик для создания новой заметки. Необходимо реализовать валидацию вводимых данных для новости
+// Обработчик для создания новой заметки. 
 func (app *application) createSnippet(w http.ResponseWriter, r *http.Request) {
 	// Используем r.Method для проверки, использует ли запрос метод POST или нет. Обратите внимание,
 	// что http.MethodPost является строкой и содержит текст "POST".
@@ -298,56 +331,11 @@ func (app *application) logout(w http.ResponseWriter, r *http.Request) {
 	// Revoke users authentication
 	session.Values["authenticated"] = false
 	session.Values["name"] = ""
+  session.Values["sub_fact"] = false
 	session.Save(r, w)
 	http.Redirect(w, r, "/", http.StatusSeeOther)
 }
 
-/*
-//не реализована логика (шаблон +- есть)
-func (app *application) checkEmail(w http.ResponseWriter, r *http.Request) {
-
-	if r.Method == http.MethodGet {
-		rand.Seed(time.Now().UnixNano())
-		//letter := rand.Intn(10000)
-		//fmt.Println(letter)
-		files := []string{
-			"./ui/html/email_check.html",
-			"./ui/html/footer.partial.html",
-		}
-		// Используем функцию template.ParseFiles() для чтения файла шаблона.
-		ts, err := template.ParseFiles(files...)
-		if err != nil {
-			app.serverError(w, err) // Использование помощника serverError()
-		}
-
-		// Затем мы используем метод Execute() для записи содержимого
-		// шаблона в тело HTTP ответа. Последний параметр в Execute() предоставляет
-		// возможность отправки динамических данных в шаблон.
-		err = ts.Execute(w, nil)
-		if err != nil {
-			app.serverError(w, err) // Использование помощника serverError()
-		}
-	} else {
-		r.ParseForm()
-		codeFromForm := r.Form["checkMail"][0]
-		fmt.Println(codeFromForm)
-		//auth := smtp.PlainAuth("", "gladiatormahotina@yandex.ru", "Ihateyadi123!", "smtp.yandex.ru")
-		//err = smtp.SendMail("smtp.yandex.ru:25", auth, "gladiatormahotina@yandex.ru", []string{users.Email}, []byte(string(letter)))
-		//	fmt.Println(err)
-		//	if err != nil {
-		//		log.Fatal(err)
-		//	}
-		if codeFromForm == "1111" {
-			//app.users.Singin(*users, false)
-			http.Redirect(w, r, "/main", http.StatusSeeOther)
-		} else {
-			data := ViewData{Text: "Неверный код"}
-			tmpl, _ := template.ParseFiles("./ui/html/email_check.html")
-			tmpl.Execute(w, data)
-		}
-	}
-}
-*/
 //возможность пользователя просматрирвать информацию о своем аккаунте
 func (app *application) userInfo(w http.ResponseWriter, r *http.Request) {
 	if r.Method == http.MethodGet {
@@ -356,17 +344,6 @@ func (app *application) userInfo(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, "Forbidden", http.StatusForbidden)
 			return
 		}
-		/*u, err := app.users.Get(session.Values["name"].(string))
-		if err != nil {
-			if errors.Is(err, models.ErrNoRecord) {
-				app.notFound(w)
-			} else {
-				app.serverError(w, err)
-			}
-			return
-		}
-
-		*/
 
 		s, err := app.notes.GetUsersNotes(session.Values["name"].(string))
 		if err != nil {
@@ -377,6 +354,14 @@ func (app *application) userInfo(w http.ResponseWriter, r *http.Request) {
 			}
 			return
 		}
+
+		for i := range s {
+			s[i].Created = strings.Replace(s[i].Created, "T", " ", -1)[0:19]
+			t, _ := time.Parse("2006-01-02 15:04:05", s[i].Created)
+			s[i].Created = t.Format("02.01.2006, 15:04")
+		}
+
+		// получение списка подписчиков
 		subs, err := app.subscribes.GetUsersSub(session.Values["name"].(string))
 		if err != nil {
 			if errors.Is(err, models.ErrNoRecord) {
@@ -386,6 +371,8 @@ func (app *application) userInfo(w http.ResponseWriter, r *http.Request) {
 			}
 			return
 		}
+
+		//получение списка подписок
 		folls, err := app.subscribes.GetUsersFolls(session.Values["name"].(string))
 		if err != nil {
 			if errors.Is(err, models.ErrNoRecord) {
@@ -395,6 +382,7 @@ func (app *application) userInfo(w http.ResponseWriter, r *http.Request) {
 			}
 			return
 		}
+
 		// Отображаем весь вывод на странице.
 		//fmt.Fprintf(w, "%v", u, s, len(s))
 		files := []string{
@@ -424,18 +412,19 @@ func (app *application) userPage(w http.ResponseWriter, r *http.Request) {
 	username := string(r.URL.Query().Get("id"))
 	//url := r.URL.Path
 	session, _ := store.Get(r, "cookie-name")
+	session.Values["sub_name"] = username
+	if (session.Values["sub_name"].(string) == session.Values["name"].(string)) && (session.Values["sub_name"] != nil) && (session.Values["name"] != nil) {
+		http.Redirect(w, r, "/account", http.StatusSeeOther)
+	}
+
 	switch session.Values["sub_fact"].(type) {
 	case nil:
 		session.Values["sub_fact"] = false
 	}
-	if r.Method == http.MethodGet {
-		/*
-			if auth, ok := session.Values["authenticated"].(bool); !ok || !auth {
-				http.Error(w, "Forbidden", http.StatusForbidden)
-				return
-			}
 
-		*/
+	if r.Method == http.MethodGet {
+
+		//получение списка записей пользователя
 		s, err := app.notes.GetUsersNotes(username)
 		if err != nil {
 			if errors.Is(err, models.ErrNoRecord) {
@@ -445,6 +434,14 @@ func (app *application) userPage(w http.ResponseWriter, r *http.Request) {
 			}
 			return
 		}
+
+		for i := range s {
+			s[i].Created = strings.Replace(s[i].Created, "T", " ", -1)[0:19]
+			t, _ := time.Parse("2006-01-02 15:04:05", s[i].Created)
+			s[i].Created = t.Format("02.01.2006, 15:04")
+		}
+
+		// получение списка подписчиков
 		subs, err := app.subscribes.GetUsersSub(username)
 		if err != nil {
 			if errors.Is(err, models.ErrNoRecord) {
@@ -454,6 +451,8 @@ func (app *application) userPage(w http.ResponseWriter, r *http.Request) {
 			}
 			return
 		}
+
+		//получение списка подписок
 		folls, err := app.subscribes.GetUsersFolls(username)
 		if err != nil {
 			if errors.Is(err, models.ErrNoRecord) {
@@ -463,12 +462,17 @@ func (app *application) userPage(w http.ResponseWriter, r *http.Request) {
 			}
 			return
 		}
+
+		// проверка факта подписки на пользователя
 		if len(folls) != 0 {
 			for i := range folls {
 				if string(folls[i].SubId) == session.Values["name"].(string) {
 					session.Values["sub_fact"] = true
 					session.Save(r, w)
 					break
+				} else {
+					session.Values["sub_fact"] = false
+					session.Save(r, w)
 				}
 			}
 		}
@@ -485,23 +489,104 @@ func (app *application) userPage(w http.ResponseWriter, r *http.Request) {
 		if err != nil {
 			app.serverError(w, err) // Использование помощника serverError()
 		}
+
 		data := &templateData{Notes: s, IsAuth: session.Values["authenticated"].(bool), OtherUsername: username, Username: session.Values["name"].(string), Subscribes_count: len(subs), Follows_count: len(folls), Sub_fact: session.Values["sub_fact"].(bool)}
 
 		err = ts.Execute(w, data)
 		if err != nil {
 			app.serverError(w, err) // Использование помощника serverError()
 		}
+
 	} else {
-		fmt.Println(session.Values["name"].(string), username)
-		fmt.Println(session.Values["sub_fact"])
 		if session.Values["sub_fact"] == true {
-			app.subscribes.Delete(session.Values["name"].(string), username)
-			session.Values["sub_fact"] = false
+			session.Save(r, w)
+			http.Redirect(w, r, "/unfollow", http.StatusSeeOther)
 		} else {
-			app.subscribes.Insert(session.Values["name"].(string), username)
-			session.Values["sub_fact"] = true
+			session.Save(r, w)
+			http.Redirect(w, r, "/follow", http.StatusSeeOther)
 		}
-		session.Save(r, w)
-		http.Redirect(w, r, "/", http.StatusSeeOther)
+		//session.Save(r, w)
+		//http.Redirect(w, r, "/", http.StatusSeeOther)
+	}
+}
+
+//обработка подписки
+func (app *application) unfollow(w http.ResponseWriter, r *http.Request) {
+	session, _ := store.Get(r, "cookie-name")
+	app.subscribes.Delete(session.Values["name"].(string), session.Values["sub_name"].(string))
+	session.Values["sub_fact"] = false
+	session.Save(r, w)
+	http.Redirect(w, r, "/user?id="+session.Values["sub_name"].(string), http.StatusSeeOther)
+}
+
+//обработка отписки
+func (app *application) follow(w http.ResponseWriter, r *http.Request) {
+	session, _ := store.Get(r, "cookie-name")
+	app.subscribes.Insert(session.Values["name"].(string), session.Values["sub_name"].(string))
+	session.Values["sub_fact"] = true
+	session.Save(r, w)
+	http.Redirect(w, r, "/user?id="+session.Values["sub_name"].(string), http.StatusSeeOther)
+}
+
+func (app *application) showSubList(w http.ResponseWriter, r *http.Request) {
+	session, _ := store.Get(r, "cookie-name")
+	subs, err := app.subscribes.GetUsersSub(session.Values["name"].(string))
+	if err != nil {
+		if errors.Is(err, models.ErrNoRecord) {
+			app.notFound(w)
+		} else {
+			app.serverError(w, err)
+		}
+		return
+	}
+
+	files := []string{
+		"./ui/html/subscribes.html",
+		"./ui/html/footer.partial.html",
+		"./ui/html/header.partial.html",
+		"./ui/html/base.layout.html",
+	}
+	// Используем функцию template.ParseFiles() для чтения файла шаблона.
+	ts, err := template.ParseFiles(files...)
+	if err != nil {
+		app.serverError(w, err) // Использование помощника serverError()
+	}
+
+	data := &templateData{Subscribes: subs, IsAuth: session.Values["authenticated"].(bool), Username: session.Values["name"].(string)}
+
+	err = ts.Execute(w, data)
+	if err != nil {
+		app.serverError(w, err) // Использование помощника serverError()
+	}
+}
+
+func (app *application) showFollowList(w http.ResponseWriter, r *http.Request) {
+	session, _ := store.Get(r, "cookie-name")
+	folls, err := app.subscribes.GetUsersFolls(session.Values["name"].(string))
+	if err != nil {
+		if errors.Is(err, models.ErrNoRecord) {
+			app.notFound(w)
+		} else {
+			app.serverError(w, err)
+		}
+		return
+	}
+	files := []string{
+		"./ui/html/followers.html",
+		"./ui/html/footer.partial.html",
+		"./ui/html/header.partial.html",
+		"./ui/html/base.layout.html",
+	}
+	// Используем функцию template.ParseFiles() для чтения файла шаблона.
+	ts, err := template.ParseFiles(files...)
+	if err != nil {
+		app.serverError(w, err) // Использование помощника serverError()
+	}
+
+	data := &templateData{Subscribes: folls, IsAuth: session.Values["authenticated"].(bool), Username: session.Values["name"].(string)}
+
+	err = ts.Execute(w, data)
+	if err != nil {
+		app.serverError(w, err) // Использование помощника serverError()
 	}
 }

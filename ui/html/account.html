@@ -21,9 +21,15 @@
                                 <div class="d-flex justify-content-start rounded-3 p-2 mb-2"
                                      style="background-color: #efefef;">
                                     <div>
+                                        {{if .OtherUsername}}
                                         <p class="mb-0">Количество записей: {{len .Notes}}</p>
                                         <p class="mb-0">Подписчики: {{.Subscribes_count}}</p>
                                         <p class="mb-0">Подписки: {{.Follows_count}}</p>
+                                            {{else}}
+                                            <p class="mb-0">Количество записей: {{len .Notes}}</p>
+                                           <a href="/subscribes"> <p class="mb-0">Подписки: {{.Subscribes_count}}</p></a>
+                                          <a href="/followers"><p class="mb-0">Подписчики: {{.Follows_count}}</p></a>
+                                        {{end}}
                                     </div>
                                 </div>
                                 {{if .OtherUsername}}
@@ -31,9 +37,9 @@
                                     <div>
                                         <form method="post">
                                             {{if .Sub_fact}}
-                                                <input type="submit" class="btn btn-primary btn-lg" value="Unfollow"/>
+                                                <input type="submit" class="btn btn-primary btn-lg" value="Отписаться"/>
                                             {{else}}
-                                                 <input type="submit" class="btn btn-primary btn-lg" value="Follow"/>
+                                                 <input type="submit" class="btn btn-primary btn-lg" value="Подписаться"/>
                                             {{end}}
                                         </form>
                                     </div>

@@ -4,18 +4,21 @@ import "net/http"
 
 func (app *application) routes() *http.ServeMux {
 	// Используется функция http.NewServeMux() для инициализации нового рутера, затем
-	// функцию "home" регистрируется как обработчик для URL-шаблона "/".
+
 	mux := http.NewServeMux()
-	mux.HandleFunc("/", app.home)
-  mux.HandleFunc("/singup", app.singing)
-	//mux.HandleFunc("email", app.singing)
-	//mux.HandleFunc("/email", app.checkEmail)
-	mux.HandleFunc("/auth", app.login)
-	mux.HandleFunc("/notes", app.showSnippet)
-	mux.HandleFunc("/notes/create", app.createSnippet)
-	mux.HandleFunc("/logout", app.logout)
-	mux.HandleFunc("/account", app.userInfo)
-	mux.HandleFunc("/user", app.userPage)
+	mux.HandleFunc("/", app.home)          // обработчик для домашней страницы
+	mux.HandleFunc("/singup", app.singing) // обработчик для домашней страницы
+	//mux.HandleFunc("/email", app.checkEmail) // обработчик для домашней страницы
+	mux.HandleFunc("/auth", app.login)                 // обработчик авторизации
+	mux.HandleFunc("/notes", app.showSnippet)          // обработчик для отображения записей
+	mux.HandleFunc("/notes/create", app.createSnippet) // обработчик для создания записей
+	mux.HandleFunc("/logout", app.logout)              // обработчик для выхода из аккаунта
+	mux.HandleFunc("/account", app.userInfo)           // обработчик для просмотра информации о своем аккаунте
+	mux.HandleFunc("/user", app.userPage)              // обработчик для просмотра информации об аккаунте другого пользователя
+	mux.HandleFunc("/follow", app.follow)              // обработчик для подписки на пользователя
+	mux.HandleFunc("/unfollow", app.unfollow)          // обработчик отписки от пользователя
+	mux.HandleFunc("/subscribes", app.showSubList)
+	mux.HandleFunc("/followers", app.showFollowList)
 
 	// Инициализируем FileServer, он будет обрабатывать
 	// HTTP-запросы к статическим файлам из папки "./ui/static".

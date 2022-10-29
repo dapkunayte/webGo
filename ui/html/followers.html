@@ -1,0 +1,26 @@
+{{ template "base" .}}
+{{define "main"}}
+    <h2 class="text-center" >Мои подписчики</h2>
+    {{if .Subscribes}}
+        <div class="container">
+            <div class="table-responsive">
+                <table class="table table-hover table-bordered align-middle caption-top">
+                    <thead class="table-light">
+                    <tr>
+                        <th scope="col">Имя пользователя</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    {{range .Subscribes}}
+                        <tr>
+                            <th scope="row"><a href='/user?id={{.SubId}}'>{{.SubId}}</a></th>
+                        </tr>
+                    {{end}}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    {{else}}
+        <p>На вас никто не подписан... пока что!</p>
+    {{end}}
+{{end}}

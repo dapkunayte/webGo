@@ -2,7 +2,7 @@ package models
 
 import (
 	"errors"
-	"time"
+	//"time"
 )
 
 var ErrNoRecord = errors.New("models: подходящей записи не найдено")
@@ -15,7 +15,7 @@ type Note struct {
 	ID       int
 	Title    string
 	Content  string
-	Created  time.Time
+	Created  string
 	Username string
 }
 
@@ -27,7 +27,7 @@ type User struct {
 
 type Subscribe struct {
 	ID       int
-	Date     time.Time
+	Date     string
 	SubId    string
 	FollowId string
 }

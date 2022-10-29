@@ -82,7 +82,7 @@ func (m *UserModel) Login(login string, password string) (bool, string) {
 		panic(err)
 	}
 	defer rows.Close()
-
+	fmt.Println(password)
 	var checkedUsers []*models.User
 
 	for rows.Next() {
@@ -93,7 +93,7 @@ func (m *UserModel) Login(login string, password string) (bool, string) {
 		}
 		checkedUsers = append(checkedUsers, cu)
 	}
-	hashedPasswordFromForm, err := bcrypt.GenerateFromPassword([]byte(login), 8)
+	//hashedPasswordFromForm, err := bcrypt.GenerateFromPassword([]byte(password), 8)
 	var matchedUserPassword string
 	var matchedUser bool = false
 	for i := range checkedUsers {
@@ -103,8 +103,10 @@ func (m *UserModel) Login(login string, password string) (bool, string) {
 		}
 	}
 
-	if matchedUser == false && matchedUserPassword != string(hashedPasswordFromForm) {
+	if matchedUser == true && bcrypt.CompareHashAndPassword([]byte(matchedUserPassword), []byte(password)) != nil {
 		return true, "Неверный логин или пароль"
+	} else if matchedUser == false {
+		return true, "Такого пользователя не существует"
 	}
 
 	return false, ""

@@ -1,0 +1,8 @@
+{{ template "base" .}}
+{{define "main"}}
+    <h2 class="text-center" >{{.Note.Title}}</h2>
+    <div class="text-center">Автор: <a href="/user?id={{.Note.Username}}">{{.Note.Username}}</a></div></br>
+    <div class="container">
+            <p class ="text-left">{{.Note.Content}}</p>
+        </div>
+{{end}}
