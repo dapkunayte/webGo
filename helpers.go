@@ -7,6 +7,7 @@ import (
 	"net/mail"
 	"runtime/debug"
 	"unicode"
+  "os"
  // "github.com/eaigner/jet"
 )
 
@@ -33,7 +34,8 @@ func (app *application) notFound(w http.ResponseWriter) {
 }
 
 func ConnectDB() (*sql.DB, error) {
-  db, err := sql.Open("postgres", "host=abul.db.elephantsql.com port=5432 user=vfslaqjo dbname=vfslaqjo password=CKBQsUjB8sfEyCgYcG1kwI7cQkE0b2Kt sslmode=disable")
+mySecret := os.Getenv("db connect data")
+db, err := sql.Open("postgres", mySecret)
 
 	if err != nil {
 		return nil, err
