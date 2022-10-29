@@ -11,6 +11,7 @@ import (
 	"strconv"
 	"time"
   "strings"
+  "os"
 )
 
 type ViewData struct {
@@ -31,7 +32,7 @@ type templateData struct {
 }
 var (
 	// key must be 16, 24 or 32 bytes long (AES-128, AES-192 or AES-256)
-	key   = []byte("super-secret-key")
+	key =  []byte(os.Getenv("coockie key"))
 	store = sessions.NewCookieStore(key)
 )
 
@@ -51,21 +52,7 @@ func (app *application) home(w http.ResponseWriter, r *http.Request) {
 		app.notFound(w) // Использование помощника notFound()
 		return
 	}
-<<<<<<< HEAD
 	n, err := app.notes.Latest()
-=======
-  switch session.Values["authenticated"].(type)
-  {
-    case nil:
-     session.Values["authenticated"] = false
-  }
-  switch session.Values["name"].(type)
-  {
-    case nil:
-     session.Values["name"] = ""
-  }
-  n, err := app.notes.Latest()
->>>>>>> origin/main
 	if err != nil {
 		app.serverError(w, err)
 		return
