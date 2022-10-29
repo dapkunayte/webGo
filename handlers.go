@@ -51,7 +51,21 @@ func (app *application) home(w http.ResponseWriter, r *http.Request) {
 		app.notFound(w) // Использование помощника notFound()
 		return
 	}
+<<<<<<< HEAD
 	n, err := app.notes.Latest()
+=======
+  switch session.Values["authenticated"].(type)
+  {
+    case nil:
+     session.Values["authenticated"] = false
+  }
+  switch session.Values["name"].(type)
+  {
+    case nil:
+     session.Values["name"] = ""
+  }
+  n, err := app.notes.Latest()
+>>>>>>> origin/main
 	if err != nil {
 		app.serverError(w, err)
 		return
