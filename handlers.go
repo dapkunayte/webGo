@@ -32,7 +32,7 @@ type templateData struct {
 }
 var (
 	// key must be 16, 24 or 32 bytes long (AES-128, AES-192 or AES-256)
-	key =  []byte(os.Getenv("coockie key"))
+	key   = []byte(os.Getenv("coockie key"))
 	store = sessions.NewCookieStore(key)
 )
 

@@ -82,7 +82,6 @@ func (m *UserModel) Login(login string, password string) (bool, string) {
 		panic(err)
 	}
 	defer rows.Close()
-	fmt.Println(password)
 	var checkedUsers []*models.User
 
 	for rows.Next() {
