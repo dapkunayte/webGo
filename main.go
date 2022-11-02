@@ -21,6 +21,7 @@ type application struct {
 	users      *postgre.UserModel
 	notes      *postgre.NoteModel
 	subscribes *postgre.SubModel
+	comments   *postgre.CommentModel
 }
 
 func main() {
@@ -50,6 +51,7 @@ func main() {
 		users:      &postgre.UserModel{DB: db},
 		notes:      &postgre.NoteModel{DB: db},
 		subscribes: &postgre.SubModel{DB: db},
+		comments:   &postgre.CommentModel{DB: db},
 	}
 
 

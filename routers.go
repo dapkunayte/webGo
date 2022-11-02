@@ -19,6 +19,8 @@ func (app *application) routes() *http.ServeMux {
 	mux.HandleFunc("/unfollow", app.unfollow)          // обработчик отписки от пользователя
 	mux.HandleFunc("/subscribes", app.showSubList)
 	mux.HandleFunc("/followers", app.showFollowList)
+    mux.HandleFunc("/comment", app.comment)
+	mux.HandleFunc("/update", app.updateNote)
 
 	// Инициализируем FileServer, он будет обрабатывать
 	// HTTP-запросы к статическим файлам из папки "./ui/static".

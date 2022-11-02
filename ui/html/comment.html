@@ -1,0 +1,18 @@
+{{ template "base" .}}
+{{define "main"}}
+    <h2 class="text-center" >Оставить комментарий</h2></br>
+    <div class="row justify-content-center">
+        {{if .IsAuth}}
+        <div class="col-md-6 .offset-md-3">
+            <form method="post">
+                <textarea name="comment" class="form-control" id="exampleFormControlTextarea1" rows="4" placeholder="Комментарий..."></textarea></br>
+                <div class="text-center">
+                   <input type="submit" class="btn btn-primary btn-lg" value="Отправить"/>
+                </div>
+            </form>
+        </div>
+         {{else}}
+            <p class="text-center">Оставлять комментарии могут только авторизованные пользователи</p>
+                {{end}}
+    </div>
+{{end}}

@@ -29,6 +29,9 @@ type templateData struct {
 	Follows_count    int
 	Subscribes       []*models.Subscribe
 	Sub_fact         bool
+    Followers        []*models.Subscribe
+	Comments         []*models.Comment
+	IsAuthor         bool
 }
 var (
 	// key must be 16, 24 or 32 bytes long (AES-128, AES-192 or AES-256)
@@ -217,64 +220,80 @@ func (app *application) login(w http.ResponseWriter, r *http.Request) {
 
 //отображение заметки - не реализован шаблон
 func (app *application) showSnippet(w http.ResponseWriter, r *http.Request) {
-	session, _ := store.Get(r, "cookie-name")
+session, _ := store.Get(r, "cookie-name")
 
-	switch session.Values["authenticated"].(type) {
-	case nil:
-		session.Values["authenticated"] = false
-	}
-
-	switch session.Values["name"].(type) {
-	case nil:
-		session.Values["name"] = ""
-	}
-
-	// Извлекаем значение параметра id из URL и попытаемся
-	// конвертировать строку в integer используя функцию strconv.Atoi(). Если его нельзя
-	// конвертировать в integer, или значение меньше 1, возвращаем ответ
-	// 404 - страница не найдена!
-	id, err := strconv.Atoi(r.URL.Query().Get("id"))
-	if err != nil || id < 1 {
-		app.notFound(w) // Использование помощника notFound()
-	}
-
-	// Вызываем метода Get из модели Snipping для извлечения данных для
-	// конкретной записи на основе её ID. Если подходящей записи не найдено,
-	// то возвращается ответ 404 Not Found (Страница не найдена).
-	s, err := app.notes.Get(id)
-	if err != nil {
-		if errors.Is(err, models.ErrNoRecord) {
-			app.notFound(w)
-		} else {
-			app.serverError(w, err)
-		}
-		return
-	}
-	s.Created = strings.Replace(s.Created, "T", " ", -1)[0:19]
-	t, _ := time.Parse("2006-01-02 15:04:05", s.Created)
-	s.Created = t.Format("02.01.2006, 15:04")
-
-	data := &templateData{Note: s, IsAuth: session.Values["authenticated"].(bool), Username: session.Values["name"].(string)}
-	files := []string{
-		"./ui/html/note.html",
-		"./ui/html/base.layout.html",
-		"./ui/html/footer.partial.html",
-		"./ui/html/header.partial.html",
-	}
-
-	ts, err := template.ParseFiles(files...)
-	if err != nil {
-		app.serverError(w, err) // Использование помощника serverError()
-		return
-	}
-
-	err = ts.Execute(w, data)
-	if err != nil {
-		app.serverError(w, err) // Использование помощника serverError()
-	}
-
-	// Отображаем весь вывод на странице.
+switch session.Values["authenticated"].(type) {
+case nil:
+session.Values["authenticated"] = false
 }
+
+switch session.Values["name"].(type) {
+case nil:
+session.Values["name"] = ""
+}
+
+// Извлекаем значение параметра id из URL и попытаемся
+// конвертировать строку в integer используя функцию strconv.Atoi(). Если его нельзя
+// конвертировать в integer, или значение меньше 1, возвращаем ответ
+// 404 - страница не найдена!
+id, err := strconv.Atoi(r.URL.Query().Get("id"))
+if err != nil || id < 1 {
+app.notFound(w) // Использование помощника notFound()
+}
+session.Values["noteId"] = id
+session.Save(r, w)
+// Вызываем метода Get из модели Snipping для извлечения данных для
+// конкретной записи на основе её ID. Если подходящей записи не найдено,
+// то возвращается ответ 404 Not Found (Страница не найдена).
+s, err := app.notes.Get(id)
+if err != nil {
+if errors.Is(err, models.ErrNoRecord) {
+app.notFound(w)
+} else {
+app.serverError(w, err)
+}
+return
+}
+s.Created = strings.Replace(s.Created, "T", " ", -1)[0:19]
+t, _ := time.Parse("2006-01-02 15:04:05", s.Created)
+s.Created = t.Format("02.01.2006, 15:04")
+isAuthor := false
+
+if s.Username == session.Values["name"].(string) {
+isAuthor = true
+}
+
+c, err := app.comments.Get(id)
+if err != nil {
+if errors.Is(err, models.ErrNoRecord) {
+app.notFound(w)
+} else {
+app.serverError(w, err)
+}
+return
+}
+data := &templateData{Note: s, IsAuth: session.Values["authenticated"].(bool), Username: session.Values["name"].(string), Comments: c, IsAuthor: isAuthor}
+files := []string{
+"./ui/html/note.html",
+"./ui/html/base.layout.html",
+"./ui/html/footer.partial.html",
+"./ui/html/header.partial.html",
+}
+
+ts, err := template.ParseFiles(files...)
+if err != nil {
+app.serverError(w, err) // Использование помощника serverError()
+return
+}
+
+err = ts.Execute(w, data)
+if err != nil {
+app.serverError(w, err) // Использование помощника serverError()
+}
+
+// Отображаем весь вывод на странице.
+}
+
 
 // Обработчик для создания новой заметки. 
 func (app *application) createSnippet(w http.ResponseWriter, r *http.Request) {
@@ -589,5 +608,89 @@ func (app *application) showFollowList(w http.ResponseWriter, r *http.Request) {
 	err = ts.Execute(w, data)
 	if err != nil {
 		app.serverError(w, err) // Использование помощника serverError()
+	}
+}
+
+func (app *application) comment(w http.ResponseWriter, r *http.Request) {
+	session, _ := store.Get(r, "cookie-name")
+	comment := &models.Comment{}
+	if r.Method == http.MethodGet {
+		files := []string{
+			"./ui/html/comment.html",
+			"./ui/html/footer.partial.html",
+			"./ui/html/header.partial.html",
+			"./ui/html/base.layout.html",
+		}
+
+		// Используем функцию template.ParseFiles() для чтения файла шаблона.
+		ts, err := template.ParseFiles(files...)
+		if err != nil {
+			app.serverError(w, err) // Использование помощника serverError()
+		}
+		data := templateData{IsAuth: session.Values["authenticated"].(bool), Username: session.Values["name"].(string)}
+		err = ts.Execute(w, data)
+		if err != nil {
+			app.serverError(w, err) // Использование помощника serverError()
+		}
+	} else if r.Method == http.MethodPost {
+		r.ParseForm()
+		comment.Content = r.Form["comment"][0]
+		comment.Username = session.Values["name"].(string)
+		comment.NoteId = session.Values["noteId"].(int)
+		noteIdString := strconv.Itoa(comment.NoteId)
+		app.comments.Add(*comment)
+		http.Redirect(w, r, "/notes?id="+noteIdString, http.StatusSeeOther)
+	}
+}
+
+func (app *application) updateNote(w http.ResponseWriter, r *http.Request) {
+	session, _ := store.Get(r, "cookie-name")
+	if auth, ok := session.Values["authenticated"].(bool); !ok || !auth {
+		http.Error(w, "Forbidden", http.StatusForbidden)
+		return
+	}
+
+	if r.Method == http.MethodGet {
+		files := []string{
+			"./ui/html/noteUpdate.html",
+			"./ui/html/footer.partial.html",
+			"./ui/html/header.partial.html",
+			"./ui/html/base.layout.html",
+		}
+
+		n, err := app.notes.Get(session.Values["noteId"].(int))
+		if err != nil {
+			if errors.Is(err, models.ErrNoRecord) {
+				app.notFound(w)
+			} else {
+				app.serverError(w, err)
+			}
+			return
+		}
+		if n.Username != session.Values["name"].(string) {
+			http.Error(w, "Forbidden", http.StatusForbidden)
+			return
+		}
+
+		// Используем функцию template.ParseFiles() для чтения файла шаблона.
+		ts, err := template.ParseFiles(files...)
+		if err != nil {
+			app.serverError(w, err) // Использование помощника serverError()
+		}
+		data := templateData{IsAuth: session.Values["authenticated"].(bool), Username: session.Values["name"].(string), Note: n}
+		err = ts.Execute(w, data)
+		if err != nil {
+			app.serverError(w, err) // Использование помощника serverError()
+		}
+	} else {
+		r.ParseForm()
+		title := r.Form["title"][0]
+		content := r.Form["content"][0]
+		err := app.notes.Update(title, content, session.Values["noteId"].(int))
+		if err != nil {
+			panic(err)
+		}
+		noteIdString := strconv.Itoa(session.Values["noteId"].(int))
+		http.Redirect(w, r, "/notes?id="+noteIdString, http.StatusSeeOther)
 	}
 }

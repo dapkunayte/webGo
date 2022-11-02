@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+    "strings"
 )
 
 type NoteModel struct {
@@ -167,4 +168,17 @@ func (m *NoteModel) GetUsersNotes(username string) ([]*models.Note, error) {
 
 	// Если все в порядке, возвращаем срез с данными.
 	return snippets, nil
+}
+
+func (m *NoteModel) Update(title, content string, noteId int) error {
+	// SQL запрос для получения данных одной записи.
+	stmt := `UPDATE notes SET title = $1, content = $2, created = now() WHERE id = $3`
+
+	if strings.Contains(title, " (ред.)") {
+		title = strings.TrimRight(title, " (ред.)")
+	}
+
+	m.DB.QueryRow(stmt, title+" (ред.)", content, noteId)
+	//defer row.Close()
+	return nil
 }

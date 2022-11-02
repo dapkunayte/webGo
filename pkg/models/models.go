@@ -11,6 +11,9 @@ var ErrNoUser = errors.New("users: нет такого пользователя"
 
 var ErrNoSub = errors.New("subsribes: нет такой подписки")
 
+var ErrNoComm = errors.New("comments : нет такого комментария")
+
+
 type Note struct {
 	ID       int
 	Title    string
@@ -30,4 +33,12 @@ type Subscribe struct {
 	Date     string
 	SubId    string
 	FollowId string
+}
+
+type Comment struct {
+	ID       int
+	Date     string
+	Content  string
+	Username string
+	NoteId   int
 }
