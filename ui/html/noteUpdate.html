@@ -1,5 +1,6 @@
 {{ template "base" .}}
 {{define "main"}}
+    <script src="https://cdn.ckeditor.com/ckeditor5/35.2.1/classic/ckeditor.js"></script>
     <h2 class="text-center" >Редактирование записи</h2>
     <form method="post">
         <div class="row justify-content-center">
@@ -11,11 +12,18 @@
         <div class="row justify-content-center">
             <div class="col-md-6 .offset-md-3">
                 <label for="exampleFormControlTextarea1">Текст:</label>
-                <textarea class="form-control" name="content" id="exampleFormControlTextarea1" rows="4">{{ .Note.Content}}</textarea></br>
+                <textarea id="editor" class="form-control" name="content" id="exampleFormControlTextarea1" rows="4">{{ .HTML}}</textarea></br>
             </div>
         </div>
         <div class="d-flex justify-content-center mx-4 mb-3 mb-lg-4">
             <input type="submit" class="btn btn-primary btn-lg" value="Внести изменения"/>
         </div>
     </form>
+    <script>
+        ClassicEditor
+            .create( document.querySelector( '#editor' ) )
+            .catch( error => {
+                console.error( error );
+            } );
+    </script>
 {{end}}

@@ -25,6 +25,9 @@ func (m *NoteModel) Insert(title, content, username string) (int, error) {
 	// метод возвращает объект sql.Result, который содержит некоторые основные
 	// данные о том, что произошло после выполнения запроса.
 	lastInsertId := 0
+    	if title == "" {
+		title = "без темы"
+	}
 	result := m.DB.QueryRow(stmt, title, content, username).Scan(&lastInsertId)
 	fmt.Println(result)
 	fmt.Println(lastInsertId)

@@ -32,6 +32,7 @@ type templateData struct {
     Followers        []*models.Subscribe
 	Comments         []*models.Comment
 	IsAuthor         bool
+    HTML             template.HTML
 }
 var (
 	// key must be 16, 24 or 32 bytes long (AES-128, AES-192 or AES-256)
@@ -272,7 +273,8 @@ app.serverError(w, err)
 }
 return
 }
-data := &templateData{Note: s, IsAuth: session.Values["authenticated"].(bool), Username: session.Values["name"].(string), Comments: c, IsAuthor: isAuthor}
+noteContentHtml := template.HTML(s.Content)
+data := &templateData{Note: s, IsAuth: session.Values["authenticated"].(bool), Username: session.Values["name"].(string), Comments: c, IsAuthor: isAuthor, HTML: noteContentHtml}
 files := []string{
 "./ui/html/note.html",
 "./ui/html/base.layout.html",
@@ -677,7 +679,8 @@ func (app *application) updateNote(w http.ResponseWriter, r *http.Request) {
 		if err != nil {
 			app.serverError(w, err) // Использование помощника serverError()
 		}
-		data := templateData{IsAuth: session.Values["authenticated"].(bool), Username: session.Values["name"].(string), Note: n}
+        noteContentHtml := template.HTML(n.Content)
+        data := templateData{IsAuth: session.Values["authenticated"].(bool), Username: session.Values["name"].(string), Note: n, HTML: noteContentHtml}
 		err = ts.Execute(w, data)
 		if err != nil {
 			app.serverError(w, err) // Использование помощника serverError()
