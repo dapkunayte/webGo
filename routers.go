@@ -21,6 +21,8 @@ func (app *application) routes() *http.ServeMux {
 	mux.HandleFunc("/followers", app.showFollowList)
     mux.HandleFunc("/comment", app.comment)
 	mux.HandleFunc("/update", app.updateNote)
+    mux.HandleFunc("/deleteComment", app.deleteComment)
+
 
 	// Инициализируем FileServer, он будет обрабатывать
 	// HTTP-запросы к статическим файлам из папки "./ui/static".

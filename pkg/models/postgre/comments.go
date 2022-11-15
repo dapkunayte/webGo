@@ -11,7 +11,7 @@ type CommentModel struct {
 
 func (m *CommentModel) Get(noteId int) ([]*models.Comment, error) {
 	// Пишем SQL запрос, который мы хотим выполнить.
-	stmt := `SELECT username,content FROM comments WHERE noteId = $1
+	stmt := `SELECT id,username,content FROM comments WHERE noteId = $1
     ORDER BY date DESC`
 
 	rows, err := m.DB.Query(stmt, noteId)
@@ -25,7 +25,7 @@ func (m *CommentModel) Get(noteId int) ([]*models.Comment, error) {
 	for rows.Next() {
 		// Создаем указатель на новую структуру Snippet
 		c := &models.Comment{}
-		err = rows.Scan(&c.Username, &c.Content)
+		err = rows.Scan(&c.ID, &c.Username, &c.Content)
 		if err != nil {
 			return nil, err
 		}
@@ -49,4 +49,15 @@ func (m *CommentModel) Add(comment models.Comment) {
 	if err != nil {
 		panic(err)
 	}
+}
+
+func (m *CommentModel) Delete(commentId int) error {
+	stmt := "DELETE FROM comments WHERE id = $1"
+	row, err := m.DB.Query(stmt, commentId)
+	defer row.Close()
+	if err != nil {
+		panic(err)
+		return err
+	}
+	return nil
 }

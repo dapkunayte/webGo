@@ -697,3 +697,21 @@ func (app *application) updateNote(w http.ResponseWriter, r *http.Request) {
 		http.Redirect(w, r, "/notes?id="+noteIdString, http.StatusSeeOther)
 	}
 }
+
+func (app *application) deleteComment(w http.ResponseWriter, r *http.Request) {
+	commentId := string(r.URL.Query().Get("id"))
+	fmt.Println(commentId)
+    commentIdInt, _ := strconv.Atoi(commentId)
+	session, _ := store.Get(r, "cookie-name")
+	if auth, ok := session.Values["authenticated"].(bool); !ok || !auth {
+		http.Error(w, "Forbidden", http.StatusForbidden)
+		return
+	}
+	err := app.comments.Delete(commentIdInt)
+	if err != nil {
+		app.serverError(w, err) // Использование помощника serverError()
+		return
+	}
+	noteIdString := strconv.Itoa(session.Values["noteId"].(int))
+	http.Redirect(w, r, "/notes?id="+noteIdString, http.StatusSeeOther)
+}
