@@ -1,6 +1,6 @@
 {{ template "base" .}}
 {{define "main"}}
-    <script src="https://cdn.ckeditor.com/ckeditor5/35.2.1/classic/ckeditor.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/ckeditor/4.8.0/ckeditor.js"></script>
     <h2 class="text-center" >Редактирование записи</h2>
     <form method="post">
         <div class="row justify-content-center">
@@ -20,10 +20,6 @@
         </div>
     </form>
     <script>
-        ClassicEditor
-            .create( document.querySelector( '#editor' ) )
-            .catch( error => {
-                console.error( error );
-            } );
+        CKEDITOR.replace('editor')
     </script>
 {{end}}
